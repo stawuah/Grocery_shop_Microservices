@@ -9,10 +9,18 @@ const OrderSchema = new Schema({
     status: String,
     txnId: String,
     items: [
-        {   
-            product: {type: Schema.Types.ObjectId, ref: 'product', required: true} ,
-            unit: { type: Number, require: true} 
-        }
+        {
+            product: {
+                _id: {type: String, require: true,},
+                desc: { type: String, require: true },
+                name: { type: String, require: true },
+                banner: { type: String, require: true },
+                type :{type :String , required : true},
+                price: { type: Number },
+                suplier : {type : String}
+                },
+                unit: { type: Number, require: true },
+    }
     ]
 },
 {
