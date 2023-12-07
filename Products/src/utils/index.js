@@ -1,6 +1,11 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const axios = require('axios')
+const amqplib = require("amqplib");
+
+const {
+  EXCHANGE_NAME,
+  MESSAGE_BROKER_URL,
+} = require("../config");
 
 
 const dotEnv = require("dotenv");
@@ -51,20 +56,56 @@ module.exports.FormateData = (data) => {
 };
 
 
-module.exports.PublishCustomerEvents = async (payload) => {
+// message brokers
 
-  axios.post('http://localhost:4000/customer/app-events', {
-    payload
-  })
+//Raise Events
+// module.exports.PublishCustomerEvent = async (payload) => {
+//   axios.post("http://customer:8001/app-events/", {
+//     payload,
+//   });
 
+//   //     axios.post(`${BASE_URL}/customer/app-events/`,{
+//   //         payload
+//   //     });
+// };
+
+// module.exports.PublishShoppingEvent = async (payload) => {
+//   // axios.post('http://gateway:8000/shopping/app-events/',{
+//   //         payload
+//   // });
+
+//   axios.post(`http://shopping:8003/app-events/`, {
+//     payload,
+//   });
+// };
+
+//Message Broker
+
+module.exports.CreateChannel = async () => {
+  try {
+    const connection = await amqplib.connect(MESSAGE_BROKER_URL);
+    const channel = await connection.createChannel();
+    await channel.assertQueue(EXCHANGE_NAME, "direct", { durable: true });
+    return channel;
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.PublishMessage = (channel, service, msg) => {
+  channel.publish(EXCHANGE_NAME, service, Buffer.from(msg));
+  console.log("Sent: ", msg);
 };
 
 
-module.exports.PublishShopingEvents = async (payload) => {
+module.exports.SuscribeMessage = async (channel, service , bind_key) => {
+  const appQueue = await channel.assertQueue(QUEUE_NAME)
 
+  channel.bindQueue(appQueue.queue , EXCHANGE_NAME , bind_key)
 
-  axios.post('http://localhost:4000/shopping/app-events', {
-    payload
+  channel.consume(appQueue.queue , data =>{
+    console.log('data recieved');
+    console.log(data.content.toString());
+    channel.ack(data)
   })
-
-}; 
+}
