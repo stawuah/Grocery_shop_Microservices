@@ -1,8 +1,9 @@
 const ProductService = require('../services/product-service');
-const { PublishShopingEvents, PublishCustomerEvents } = require('../utils/index')
+const { PublishMessage} = require('../utils/index')
 const UserAuth = require('./middlewares/auth')
 
-module.exports = (app) => {
+
+module.exports = (app , channel) => {
 
     const service = new ProductService();
 
@@ -70,7 +71,10 @@ module.exports = (app) => {
 
         const { data } = await service.GetProductPayload(_id, { productId: req.body._id }, "ADD_TO_WISHLIST")
         try {
-            PublishCustomerEvents(data)
+            // PublishCustomerEvents(data)
+
+            PublishMessage(channel , process.env.CUSTOMER_SERVICE , JSON.stringify(data))
+
             return res.status(200).json(data.data.product);
         } catch (err) {
 
@@ -86,7 +90,9 @@ module.exports = (app) => {
 
         const { data } = await service.GetProductPayload(_id, { productId }, "REMOVE_FROM_WISHLIST")
         try {
-            PublishCustomerEvents(data)
+
+            PublishMessage(channel , process.env.CUSTOMER_SERVICE , JSON.stringify(data))
+
 
             return res.status(200).json(data.data.product);
 
@@ -103,8 +109,12 @@ module.exports = (app) => {
         try {
             const { data } = await service.GetProductPayload(_id, { productId: req.body._id, qty: req.body.qty }, "ADD_TO_CART")
 
-            PublishCustomerEvents(data)
-            PublishShopingEvents(data)
+            // PublishCustomerEvents(data)
+            PublishMessage(channel , process.env.CUSTOMER_SERVICE , JSON.stringify(data))
+
+            // PublishShopingEvents(data)
+            PublishMessage(channel , process.env.SHOPPING_SERVICE , JSON.stringify(data))
+
                 ;
             const response = {
                 product: data.data.product,
@@ -126,8 +136,12 @@ module.exports = (app) => {
 
             const { data } = await service.GetProductPayload(_id, { productId }, "REMOVE_FROM_CART")
 
-            PublishCustomerEvents(data)
-            PublishShopingEvents(data)
+            // PublishCustomerEvents(data)
+            PublishMessage(channel , process.env.CUSTOMER_SERVICE , JSON.stringify(data))
+
+            // PublishShopingEvents(data)
+            PublishMessage(channel , process.env.SHOPPING_SERVICE , JSON.stringify(data))
+
 
             const response = {
                 product: data.data.product,

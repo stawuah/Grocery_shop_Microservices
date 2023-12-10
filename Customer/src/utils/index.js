@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-
+const amqplib = require("amqplib");
 
 const dotEnv = require("dotenv");
 dotEnv.config()
@@ -48,3 +48,28 @@ module.exports.FormateData = (data) => {
     throw new Error("Data Not found!");
   }
 }; 
+
+
+module.exports.CreateChannel = async () => {
+  try {
+    const connection = await amqplib.connect(process.env.MESSAGE_BROKER_URL);
+    const channel = await connection.createChannel();
+    await channel.assertQueue(process.env.EXCHANGE_NAME, "direct", { durable: true });
+    return channel;
+  } catch (err) {
+    throw err;
+  }
+};
+
+
+module.exports.SuscribeMessage = async (channel, service) => {
+  const appQueue = await channel.assertQueue( process.env.QUEUE_NAME)
+
+  channel.bindQueue(appQueue.queue , process.env.EXCHANGE_NAME , process.env.CUSTOMER_SERVICE)
+
+  channel.consume(appQueue.queue , data =>{
+    console.log('data recieved');
+    console.log(data.content.toString());
+    channel.ack(data)
+  })
+}

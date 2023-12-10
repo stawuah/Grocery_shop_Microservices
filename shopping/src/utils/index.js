@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const amqplib = require("amqplib");
 
 
 const dotEnv = require("dotenv");
@@ -48,3 +49,37 @@ module.exports.FormateData = (data) => {
     throw new Error("Data Not found!");
   }
 }; 
+
+
+//Message Broker
+
+// Example error handling in CreateChannel
+module.exports.CreateChannel = async () => {
+  try {
+    const connection = await amqplib.connect(process.env.MESSAGE_BROKER_URL);
+    const channel = await connection.createChannel();
+    await channel.assertQueue(process.env.EXCHANGE_NAME, "direct", { durable: true });
+    return channel;
+  } catch (err) {
+    console.error("Error creating channel:", err);
+    throw new Error("Error creating channel");
+  }
+};
+
+
+module.exports.PublishMessage = (channel, service, msg) => {
+  channel.publish(process.env.EXCHANGE_NAME, service, Buffer.from(msg));
+  console.log("Sent: ", msg);
+};
+
+module.exports.SubscribeMessage = async (channel, service , bind_key) => {
+  const appQueue = await channel.assertQueue(process.env.QUEUE_NAME)
+
+  channel.bindQueue(appQueue.queue , process.env.EXCHANGE_NAME , bind_key)
+
+  channel.consume(appQueue.queue , data =>{
+    console.log('data recieved');
+    console.log(data.content.toString());
+    channel.ack(data)
+  })
+}

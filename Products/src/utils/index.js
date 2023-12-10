@@ -2,10 +2,9 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const amqplib = require("amqplib");
 
-const {
-  EXCHANGE_NAME,
-  MESSAGE_BROKER_URL,
-} = require("../config");
+// const {
+//   EXCHANGE_NAME,
+// } = require("../config");
 
 
 const dotEnv = require("dotenv");
@@ -83,9 +82,9 @@ module.exports.FormateData = (data) => {
 
 module.exports.CreateChannel = async () => {
   try {
-    const connection = await amqplib.connect(MESSAGE_BROKER_URL);
+    const connection = await amqplib.connect(process.env.MESSAGE_BROKER_URL);
     const channel = await connection.createChannel();
-    await channel.assertQueue(EXCHANGE_NAME, "direct", { durable: true });
+    await channel.assertQueue(process.env.EXCHANGE_NAME, "direct", { durable: true });
     return channel;
   } catch (err) {
     throw err;
@@ -93,7 +92,7 @@ module.exports.CreateChannel = async () => {
 };
 
 module.exports.PublishMessage = (channel, service, msg) => {
-  channel.publish(EXCHANGE_NAME, service, Buffer.from(msg));
+  channel.publish(process.env.EXCHANGE_NAME, service, Buffer.from(msg));
   console.log("Sent: ", msg);
 };
 
@@ -101,7 +100,7 @@ module.exports.PublishMessage = (channel, service, msg) => {
 module.exports.SuscribeMessage = async (channel, service , bind_key) => {
   const appQueue = await channel.assertQueue(QUEUE_NAME)
 
-  channel.bindQueue(appQueue.queue , EXCHANGE_NAME , bind_key)
+  channel.bindQueue(appQueue.queue , process.env.EXCHANGE_NAME , bind_key)
 
   channel.consume(appQueue.queue , data =>{
     console.log('data recieved');
